@@ -1,8 +1,8 @@
+// frontend/src/pages/Dashboard.jsx
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useAnalysis } from '../hooks/useAnalysis';
 import TextAnalyzer from '../components/TextAnalyzer';
-import ResultDisplay from '../components/ResultDisplay';
 import { SplineSceneBasic } from '../components/SplineSceneBasic';
 import { motion } from 'framer-motion';
 import { FiBarChart2, FiCheckCircle, FiCpu, FiTrendingUp } from 'react-icons/fi';
@@ -11,8 +11,14 @@ const Dashboard = () => {
     const { user } = useAuth();
     const { loading, results, analyzeText, clearResults } = useAnalysis();
 
-    const handleHumanize = async (text, style) => {
-        await analyzeText(text, 'humanize', style);
+    // When user clicks "Humanize AI" or "Paraphrase"
+    const handleHumanize = async (text, style, settings) => {
+        await analyzeText(text, 'humanize', style, settings);
+    };
+
+    // When user clicks "Check for AI" or "Detect AI"
+    const handleDetect = async (text) => {
+        await analyzeText(text, 'detect'); 
     };
 
     const stats = [
@@ -24,11 +30,8 @@ const Dashboard = () => {
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-8">
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-            >
+            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+                
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-200 dark:border-gray-800">
                     <div>
@@ -49,8 +52,8 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                {/* Spline 3D Scene */}
-                <div className="mt-8 mb-8">
+                {/* 3D Scene */}
+                <div className="mt-8 mb-8 hidden md:block">
                     <SplineSceneBasic />
                 </div>
 
@@ -59,11 +62,11 @@ const Dashboard = () => {
                     {stats.map((stat, index) => {
                         const Icon = stat.icon;
                         return (
-                            <div key={index} className="card card-hover text-center">
+                            <div key={index} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 text-center">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="stat-label">{stat.label}</p>
-                                        <p className={`stat-value ${stat.valueClass || ''}`}>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{stat.label}</p>
+                                        <p className={`text-xl font-black ${stat.valueClass || 'text-gray-900 dark:text-white'}`}>
                                             {stat.value}
                                         </p>
                                     </div>
@@ -74,22 +77,15 @@ const Dashboard = () => {
                     })}
                 </div>
 
-                {/* Main Analyzer */}
-                <div className="card card-hover">
-                    <TextAnalyzer
-                        onAnalyze={analyzeText}
-                        onHumanize={handleHumanize}
-                        loading={loading}
-                        humanizedText={results?.humanized}
-                    />
-
-                    {results && (
-                        <ResultDisplay
-                            results={results}
-                            onClear={clearResults}
-                        />
-                    )}
-                </div>
+                {/* The NEW 3-Tab Text Analyzer Component */}
+                <TextAnalyzer
+                    onAnalyze={handleDetect}
+                    onHumanize={handleHumanize}
+                    loading={loading}
+                    humanizedText={results?.humanized} 
+                    detectionResult={results?.detection} 
+                />
+                
             </motion.div>
         </div>
     );

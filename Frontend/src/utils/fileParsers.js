@@ -1,3 +1,5 @@
+// src/utils/fileParsers.js
+
 const isBrowser = () => typeof window !== 'undefined' && typeof document !== 'undefined';
 
 const readTextFile = async (file) => {

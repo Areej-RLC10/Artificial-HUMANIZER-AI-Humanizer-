@@ -43,7 +43,9 @@ class AIAnalysisController extends Controller
             $validator = Validator::make($request->all(), [
                 'text' => 'required|string|min:10|max:50000',
                 'action' => 'required|in:detect,humanize,both',
-                'style' => 'sometimes|in:casual,professional,conversational'
+                'style' => 'sometimes|string',
+                'strength' => 'sometimes|string',
+                'length' => 'sometimes|string',
             ]);
 
             if ($validator->fails()) {
@@ -145,7 +147,7 @@ class AIAnalysisController extends Controller
                     $iterativeResult = $this->iterativeService->rewrite(
                         $result['humanized'],
                         $style,
-                        1 // one iteration by default
+                        1
                     );
                     $result['iterative'] = $iterativeResult;
                 } catch (\Exception $e) {
@@ -158,6 +160,7 @@ class AIAnalysisController extends Controller
             $analysis->processing_time = round((microtime(true) - $startTime) * 1000);
             $analysis->save();
 
+            // Save to History
             History::create([
                 'user_id' => $user->id,
                 'action' => $action,
@@ -165,6 +168,16 @@ class AIAnalysisController extends Controller
                 'result_text' => $result['humanized'] ?? null,
                 'ai_score' => $result['detection']['ai_score'] ?? null
             ]);
+
+            // ✅ NEW: Keep only the most recent 5 history records per user
+            $historyIds = History::where('user_id', $user->id)
+                ->orderBy('created_at', 'desc')
+                ->pluck('id');
+
+            if ($historyIds->count() > 5) {
+                // Delete all history IDs after the first 5
+                History::whereIn('id', $historyIds->slice(5)->values())->delete();
+            }
 
             $user->deductCredits();
 
@@ -194,10 +207,12 @@ class AIAnalysisController extends Controller
         try {
             $history = Analysis::where('user_id', $request->user()->id)
                 ->orderBy('created_at', 'desc')
-                ->paginate(20);
-            return response()->json($history);
+                ->limit(5) // ✅ Only fetch the latest 5 records
+                ->get();
+
+            return response()->json(['data' => $history]);
         } catch (\Exception $e) {
-            return response()->json(['data' => [], 'current_page' => 1, 'last_page' => 1]);
+            return response()->json(['data' => []]);
         }
     }
 

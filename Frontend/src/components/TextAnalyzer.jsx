@@ -3,145 +3,198 @@ import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { validateText } from '../utils/validators';
 import toast from 'react-hot-toast';
-import { FiEdit2, FiCheck, FiSearch } from 'react-icons/fi';
+import { FiTrash2, FiCopy, FiSearch, FiEdit2 } from 'react-icons/fi';
 import FileUpload from './FileUpload';
-import { motion } from 'framer-motion';
+import HighlightedText from './HighlightedText';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const TextAnalyzer = ({ loading, onAnalyze, onHumanize, humanizedText }) => {
+const TextAnalyzer = ({ loading, onAnalyze, onHumanize, humanizedText, detectionResult }) => {
     const { user } = useAuth();
     const [text, setText] = useState('');
-    const [isFocused, setIsFocused] = useState(false);
+    const [activeTab, setActiveTab] = useState('humanizer'); 
+    
+    // Paraphraser settings
+    const [style, setStyle] = useState('Standard');
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        if (!user) {
-            toast.error('Please log in to analyze text.');
-            return;
-        }
-
-        const validation = validateText(text);
-        if (!validation.valid) {
-            toast.error(validation.message);
-            return;
-        }
-
-        await onAnalyze(text, 'both', 'casual');
+    const handleDetect = async () => {
+        if (!validateText(text).valid) return toast.error(validateText(text).message);
+        await onAnalyze(text); 
     };
 
-    const handleHumanize = async () => {
-        const validation = validateText(text);
-        if (!validation.valid) {
-            toast.error(validation.message);
-            return;
-        }
-
-        await onHumanize(text, 'casual');
+    const handleHumanize = async (isParaphrase = false) => {
+        if (!validateText(text).valid) return toast.error(validateText(text).message);
+        const selectedStyle = isParaphrase ? style.toLowerCase() : 'standard';
+        await onHumanize(text, selectedStyle, { strength: 'Medium', length: 'Same' }); 
     };
 
-    const handleFileUpload = (content) => {
-        setText(content);
-    };
-
-    const stats = {
-        characters: text.length,
-        words: text.trim() ? text.split(/\s+/).length : 0,
-        sentences: text.trim() ? text.split(/[.!?]+/).filter((s) => s.trim()).length : 0,
-    };
+    const stats = { words: text.trim() ? text.split(/\s+/).length : 0 };
+    const aiScore = detectionResult ? (detectionResult.ai_score * 100).toFixed(1) : 0;
 
     return (
-        <motion.form
-            onSubmit={handleSubmit}
-            className="space-y-5"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-        >
-            <div className="grid gap-5 md:grid-cols-2">
-                <div>
-                    <label className="mb-2 block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">
-                        <FiEdit2 className="mr-1.5 inline h-3.5 w-3.5" />
-                        Input
-                    </label>
-                    <textarea
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
-                        rows={11}
-                        className={`input-field resize-y transition-all duration-200 ${
-                            isFocused ? 'ring-2 ring-gray-900 dark:ring-white' : ''
-                        }`}
-                        placeholder="Paste your AI-written text here or upload a file..."
-                        disabled={loading}
-                    />
-                    <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-400 dark:text-gray-500">
-                        <span>{stats.characters} characters</span>
-                        <span>{stats.words} words</span>
-                        <span>{stats.sentences} sentences</span>
-                        {stats.characters >= 10 && (
-                            <span className="text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
-                                <FiCheck className="w-3 h-3" /> Valid
-                            </span>
-                        )}
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden min-h-[600px]">
+            
+            {/* Top Tabs */}
+            <div className="flex border-b border-gray-200 dark:border-gray-800 px-4 pt-4 gap-2 overflow-x-auto">
+                <button onClick={() => setActiveTab('humanizer')} className={`px-5 py-2.5 text-sm font-bold rounded-t-xl transition-colors whitespace-nowrap ${activeTab === 'humanizer' ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-900'}`}>AI Humanizer</button>
+                <button onClick={() => setActiveTab('detector')} className={`px-5 py-2.5 text-sm font-bold rounded-t-xl transition-colors whitespace-nowrap ${activeTab === 'detector' ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-900'}`}>AI Detector <span className="bg-green-100 text-green-700 text-[10px] px-1.5 py-0.5 rounded ml-1">NEW</span></button>
+                <button onClick={() => setActiveTab('paraphraser')} className={`px-5 py-2.5 text-sm font-bold rounded-t-xl transition-colors whitespace-nowrap ${activeTab === 'paraphraser' ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-900'}`}>AI Paraphraser</button>
+            </div>
+
+            {/* Settings Bar (Only for Paraphraser) */}
+            {activeTab === 'paraphraser' && (
+                <div className="flex items-center gap-3 px-6 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Style</span>
+                    <select value={style} onChange={(e) => setStyle(e.target.value)} className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-full text-sm font-medium outline-none">
+                        <option>Standard</option>
+                        <option>Fluency</option>
+                        <option>Formal</option>
+                        <option>Simple</option>
+                        <option>Academic</option>
+                        <option>Creative</option>
+                    </select>
+                </div>
+            )}
+
+            {/* Main Content Area with Slide Animation */}
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, x: activeTab === 'detector' ? 20 : -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: activeTab === 'detector' ? -20 : 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-200 dark:divide-gray-800"
+                >
+                    
+                    {/* ---------------- LEFT COLUMN (Input) ---------------- */}
+                    <div className="p-6 flex flex-col min-h-[450px]">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                                {activeTab === 'detector' ? 'Your text' : 'Original text'}
+                            </h3>
+                            {text && (
+                                <button onClick={() => setText('')} className="text-xs font-bold text-gray-500 border border-gray-300 dark:border-gray-700 rounded-full px-3 py-1 hover:bg-gray-100">
+                                    Remove text
+                                </button>
+                            )}
+                        </div>
+                        
+                        <textarea
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            className="w-full flex-1 bg-transparent resize-none outline-none text-gray-800 dark:text-gray-200 text-sm leading-relaxed mb-4"
+                            placeholder="Paste your text here..."
+                            disabled={loading}
+                        />
+
+                        {/* ✅ FILE UPLOAD COMPONENT */}
+                        <div className="mb-4">
+                            <FileUpload 
+                                onFileUpload={setText} 
+                                loading={loading} 
+                                text={text} 
+                            />
+                        </div>
+                        
+                        <div className="mt-2 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                            <span className="text-xs text-gray-400">Words: {stats.words} / 5,000</span>
+                            
+                            {activeTab === 'detector' && (
+                                <button onClick={handleDetect} disabled={loading || !text.trim()} className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition disabled:opacity-50">
+                                    {loading ? 'Checking...' : 'Check for AI'}
+                                </button>
+                            )}
+                            {activeTab === 'humanizer' && (
+                                <button onClick={() => handleHumanize(false)} disabled={loading || !text.trim()} className="px-6 py-2.5 bg-black text-white font-bold rounded-lg transition disabled:opacity-50">
+                                    {loading ? 'Humanizing...' : 'Humanize AI'}
+                                </button>
+                            )}
+                            {activeTab === 'paraphraser' && (
+                                <button onClick={() => handleHumanize(true)} disabled={loading || !text.trim()} className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg transition disabled:opacity-50">
+                                    {loading ? 'Paraphrasing...' : 'Paraphrase'}
+                                </button>
+                            )}
+                        </div>
                     </div>
-                </div>
 
-                <div>
-                    <label className="mb-2 block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">
-                        <FiEdit2 className="mr-1.5 inline h-3.5 w-3.5" />
-                        Output
-                    </label>
-                    <textarea
-                        value={humanizedText || 'Your rewritten text will appear here...'}
-                        readOnly
-                        rows={11}
-                        className="input-field resize-y bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-                        placeholder="Humanized text will appear here"
-                    />
-                </div>
+                    {/* ---------------- RIGHT COLUMN (Output/Detection) ---------------- */}
+                    <div className="p-6 flex flex-col min-h-[450px] bg-gray-50/30 dark:bg-gray-900/30">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-white">
+                                {activeTab === 'detector' ? 'Detection result' : 'Result text'}
+                            </h3>
+                        </div>
+                        
+                        <div className="flex-1 flex flex-col">
+                            
+                            {/* --- DETECTOR VIEW --- */}
+                            {activeTab === 'detector' && (
+                                detectionResult ? (
+                                    <div className="flex-1 flex flex-col space-y-6">
+                                        <div className="flex flex-col items-center justify-center py-4">
+                                            <div className="relative w-28 h-28 flex items-center justify-center rounded-full border-4 border-dashed border-gray-300">
+                                                <div className="text-center">
+                                                    <span className={`text-2xl font-black ${aiScore > 70 ? 'text-red-500' : aiScore > 40 ? 'text-yellow-500' : 'text-sky-500'}`}>{aiScore}%</span>
+                                                    <p className="text-[10px] font-bold text-gray-500 uppercase mt-1">AI Score</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <HighlightedText sentences={detectionResult.sentences} />
+                                    </div>
+                                ) : (
+                                    <div className="flex-1 flex flex-col items-center justify-center text-gray-400 text-sm">
+                                        <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center mb-4 font-bold">AI</div>
+                                        Your AI score will appear here.
+                                    </div>
+                                )
+                            )}
+
+                            {/* --- HUMANIZER VIEW --- */}
+                            {activeTab === 'humanizer' && (
+                                humanizedText ? (
+                                    <div className="flex-1 flex flex-col">
+                                        <div className="flex-1 text-sm leading-relaxed text-gray-800 dark:text-gray-200 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
+                                            {humanizedText}
+                                        </div>
+                                        <div className="mt-4 flex justify-end">
+                                            <button onClick={() => { navigator.clipboard.writeText(humanizedText); toast.success('Copied'); }} className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-bold hover:bg-gray-100 flex items-center gap-2">
+                                                <FiCopy /> Copy Text
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">New text will appear here</div>
+                                )
+                            )}
+
+                            {/* --- PARAPHRASER VIEW --- */}
+                            {activeTab === 'paraphraser' && (
+                                humanizedText ? (
+                                    <div className="flex-1 flex flex-col">
+                                        <div className="flex-1 text-sm leading-relaxed text-gray-800 dark:text-gray-200 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
+                                            {humanizedText}
+                                        </div>
+                                        <div className="mt-4 flex justify-end">
+                                            <button onClick={() => { navigator.clipboard.writeText(humanizedText); toast.success('Copied'); }} className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-bold hover:bg-gray-100 flex items-center gap-2">
+                                                <FiCopy /> Copy Text
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Paraphrased text will appear here</div>
+                                )
+                            )}
+
+                        </div>
+                    </div>
+                </motion.div>
+            </AnimatePresence>
+
+            {/* Bottom Disclaimer */}
+            <div className="bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-800 py-3 text-center">
+                <p className="text-xs text-gray-500 italic">Clever AI Humanizer shows probability, not proof — no AI checker is 100% accurate.</p>
             </div>
-
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-3">
-                <FileUpload onFileUpload={handleFileUpload} loading={loading} text={text} />
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                    type="button"
-                    onClick={handleHumanize}
-                    disabled={loading || !text.trim()}
-                    className="w-full btn-primary flex items-center justify-center gap-2"
-                >
-                    {loading ? (
-                        <span className="flex items-center gap-2">
-                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
-                            <span>Processing...</span>
-                        </span>
-                    ) : (
-                        <>
-                            <FiEdit2 className="h-4 w-4" />
-                            <span>Humanize Text</span>
-                        </>
-                    )}
-                </button>
-
-                <button
-                    type="submit"
-                    disabled={loading || !text.trim()}
-                    className="w-full btn-secondary flex items-center justify-center gap-2"
-                >
-                    <FiSearch className="h-4 w-4" />
-                    Detect AI
-                </button>
-            </div>
-
-            <div className="text-center text-xs text-gray-400 dark:text-gray-500">
-                You have <span className={`font-bold ${user?.credits < 10 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
-                    {user?.credits || 0}
-                </span> credits remaining
-            </div>
-        </motion.form>
+        </div>
     );
 };
 

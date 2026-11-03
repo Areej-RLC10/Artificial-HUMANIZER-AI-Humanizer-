@@ -1,6 +1,6 @@
 // src/App.jsx
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import Navigation from './components/Navigation';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -8,10 +8,12 @@ import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import History from './pages/History';
+import AnalysisDetail from './pages/AnalysisDetail'; // ✅ Import the new page
 import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
     const { user, loading } = useAuth();
+    const location = useLocation(); // ✅ Need this for AnimatePresence key
 
     if (loading) {
         return <LoadingSpinner fullScreen />;
@@ -42,6 +44,12 @@ function App() {
                         <Route path="/history" element={
                             user ? <History /> : <Navigate to="/login" />
                         } />
+                        
+                        {/* ✅ NEW ROUTE for viewing a single analysis */}
+                        <Route path="/analysis/:id" element={
+                            user ? <AnalysisDetail /> : <Navigate to="/login" />
+                        } />
+                        
                     </Routes>
                 </motion.div>
             </AnimatePresence>

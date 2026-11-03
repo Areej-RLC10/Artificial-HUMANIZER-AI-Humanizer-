@@ -118,11 +118,21 @@ class OpenAIService
 
     public function humanizeText($text, $style = 'casual')
     {
+        // ✅ Added all missing styles to prevent "Undefined array key" error
         $styleGuide = [
             'casual' => 'Use conversational language, contractions, and natural flow.',
             'professional' => 'Use formal language, clear structure, and professional tone.',
             'conversational' => 'Use friendly, engaging language with personal touches.',
+            'standard' => 'Use clear, natural language that sounds human.',
+            'fluency' => 'Use smooth, easy-to-read language with good rhythm.',
+            'formal' => 'Use polite, structured, and professional language.',
+            'simple' => 'Use short sentences and easy words.',
+            'academic' => 'Use a scholarly tone with precise vocabulary.',
+            'creative' => 'Use expressive, engaging, and imaginative language.',
         ];
+
+        // Fallback to 'standard' if the style is not in the array
+        $styleInstruction = $styleGuide[$style] ?? $styleGuide['standard'];
 
         // Pull the same phrase list HeuristicDetectionService penalizes,
         // so the humanizer actively avoids exactly what your own detector
@@ -151,7 +161,7 @@ MEANING GUARD (non-negotiable):
 - Keep all facts, names, numbers, dates, and the original meaning unchanged.
 - Do NOT invent details or remove information.
 
-STYLE: {$styleGuide[$style]}
+STYLE: {$styleInstruction}
 
 REWRITE RULES:
 1. Change the sentence structure — combine some sentences, break others apart.

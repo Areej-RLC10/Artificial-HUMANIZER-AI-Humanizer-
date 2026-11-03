@@ -17,7 +17,6 @@ export const AuthProvider = ({ children }) => {
             return;
         }
 
-        // Set token in axios defaults
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
         auth.user()
@@ -35,13 +34,10 @@ export const AuthProvider = ({ children }) => {
         try {
             const response = await auth.login({ email, password });
             const { token, user } = response.data;
-            
-            // Store token in localStorage
+
             localStorage.setItem('auth_token', token);
-            
-            // Set token in axios defaults for all future requests
             api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            
+
             setUser(user);
             toast.success('Welcome back!');
             return { success: true };
@@ -60,15 +56,12 @@ export const AuthProvider = ({ children }) => {
                 password,
                 password_confirmation: passwordConfirmation,
             });
-            
+
             const { token, user } = response.data;
-            
-            // Store token in localStorage
+
             localStorage.setItem('auth_token', token);
-            
-            // Set token in axios defaults for all future requests
             api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            
+
             setUser(user);
             toast.success('Account created successfully!');
             return { success: true };
@@ -88,12 +81,8 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             // Ignore errors on logout
         } finally {
-            // Remove token from localStorage
             localStorage.removeItem('auth_token');
-            
-            // Remove token from axios defaults
             delete api.defaults.headers.common['Authorization'];
-            
             setUser(null);
             toast.success('Logged out successfully');
         }
@@ -101,6 +90,17 @@ export const AuthProvider = ({ children }) => {
 
     const updateCredits = (newCredits) => {
         setUser(prev => prev ? { ...prev, credits: newCredits } : null);
+    };
+
+    // ✅ NEW: Refresh full user object (credits, analyses_count, avg_ai_score)
+    const refreshUser = async () => {
+        try {
+            const response = await auth.user();
+            setUser(response.data);
+            return response.data;
+        } catch (error) {
+            return null;
+        }
     };
 
     return (
@@ -111,7 +111,8 @@ export const AuthProvider = ({ children }) => {
             register,
             logout,
             updateCredits,
-            isAuthenticated: !!user
+            refreshUser,
+            isAuthenticated: !!user,
         }}>
             {children}
         </AuthContext.Provider>
