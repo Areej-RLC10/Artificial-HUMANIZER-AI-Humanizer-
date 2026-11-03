@@ -145,23 +145,29 @@ class OpenAIService
                         'messages' => [
                             [
                                 'role' => 'system',
-                                'content' => "You are an expert at rewriting AI-generated text to sound human.
-Rewrite the text to be natural and authentic.
-Style: {$styleGuide[$style]}
-Requirements:
-1. Use varied sentence structures and lengths (avoid uniform sentence length)
-2. Add natural language patterns, and occasional contractions or informal asides where appropriate
-3. Include personal touches where appropriate
-4. Preserve the original meaning exactly — do not add or remove facts
-5. Do NOT use any of these words or phrases, they are strong AI tells: {$avoidPhrases}
-Return only the rewritten text, nothing else.",
+                                'content' => "You are an expert copywriter. Completely rewrite the provided text so it sounds like a real human wrote it.
+
+MEANING GUARD (non-negotiable):
+- Keep all facts, names, numbers, dates, and the original meaning unchanged.
+- Do NOT invent details or remove information.
+
+STYLE: {$styleGuide[$style]}
+
+REWRITE RULES:
+1. Change the sentence structure — combine some sentences, break others apart.
+2. Replace formal words with simpler, conversational alternatives.
+3. Vary sentence length dramatically (some short, some long).
+4. Do NOT keep the same opening words as the original.
+5. Do NOT add filler like 'Here is the rewritten text:' — return only the text.
+
+FORBIDDEN PHRASES (they are strong AI tells): {$avoidPhrases}"
                             ],
                             [
                                 'role' => 'user',
                                 'content' => $text,
                             ],
                         ],
-                        'temperature' => 0.8,
+                        'temperature' => 0.9,
                         'max_tokens' => 2000,
                     ],
                 ]);
@@ -196,7 +202,7 @@ Return only the rewritten text, nothing else.",
             }
         }
 
-        Log::error('❌ All Groq models failed for humanization, returning original text');
-        return null; // let TextHumanizerService trigger its fallback
+        Log::error('❌ All Groq models failed for humanization, returning null to trigger fallback');
+        return null; 
     }
 }
