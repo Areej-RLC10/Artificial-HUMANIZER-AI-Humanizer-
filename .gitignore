@@ -1,7 +1,23 @@
+# Node
 node_modules/
-vendor/
 dist/
-.env
-.env.*
-!.env.example
+build/
+
+# Laravel
+Backend/vendor/
+Backend/storage/
+Backend/.env
+Backend/.env.backup
+
+# Frontend
+frontend/.env
+frontend/.env.production
+
+# OS / Editor
 .DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log
+response.json
