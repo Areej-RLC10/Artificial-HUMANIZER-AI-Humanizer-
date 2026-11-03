@@ -7,20 +7,20 @@ const HighlightedText = ({ sentences }) => {
     const getStyles = (category) => {
         switch (category) {
             case 'human':
-                return 'bg-sky-100 text-sky-900 border-sky-200 dark:bg-sky-900/30 dark:text-sky-200';
+                return 'bg-sky-100 text-sky-900 border-sky-200 dark:bg-sky-900/30 dark:text-sky-200'; // Light Blue
             case 'mixed':
-                return 'bg-yellow-100 text-yellow-900 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-200';
+                return 'bg-yellow-100 text-yellow-900 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-200'; // Light Yellow
             case 'likely_ai':
-                return 'bg-pink-100 text-pink-900 border-pink-200 dark:bg-pink-900/30 dark:text-pink-200';
+                return 'bg-pink-100 text-pink-900 border-pink-200 dark:bg-pink-900/30 dark:text-pink-200'; // Light Pink
             case 'surely_ai':
-                return 'bg-pink-100 text-pink-900 border-pink-300 underline decoration-red-500 decoration-2 underline-offset-4 dark:bg-pink-900/30 dark:text-pink-200 dark:border-pink-700';
+                return 'bg-pink-100 text-pink-900 border-pink-300 underline decoration-red-500 decoration-2 underline-offset-4 dark:bg-pink-900/30 dark:text-pink-200 dark:border-pink-700'; // Pink + Red Underline
             default:
                 return 'bg-gray-100 text-gray-900';
         }
     };
 
     return (
-        <div className="leading-loose text-sm p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl">
+        <div className="leading-loose text-sm p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
             {sentences.map((sentence, index) => (
                 <span 
                     key={index} 
