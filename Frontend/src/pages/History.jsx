@@ -5,33 +5,41 @@ import { useAuth } from '../hooks/useAuth';
 import { formatDate, formatScore, getScoreColor } from '../utils/formatters';
 import { motion } from 'framer-motion';
 import { FiClock, FiChevronRight } from 'react-icons/fi';
+import axios from 'axios'; // Make sure you have axios installed
 
 const History = () => {
-    const { user } = useAuth();
+    const { user, token } = useAuth(); // Assuming your auth hook provides the token
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setTimeout(() => {
-            setHistory([
-                {
-                    id: 1,
-                    original_text: "This is an AI-generated sample text that was analyzed for detection.",
-                    ai_score: 0.78,
-                    created_at: new Date().toISOString(),
-                    status: 'completed'
-                },
-                {
-                    id: 2,
-                    original_text: "Another example of AI content that needed humanization.",
-                    ai_score: 0.65,
-                    created_at: new Date(Date.now() - 86400000).toISOString(),
-                    status: 'completed'
-                }
-            ]);
+        const fetchHistory = async () => {
+            try {
+                // Replace with your actual API URL if it's in an environment variable
+                const apiUrl = import.meta.env.VITE_API_URL || 'https://ai-humanizer-api-9v74.onrender.com/api';
+                
+                const response = await axios.get(`${apiUrl}/history`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        Accept: 'application/json'
+                    }
+                });
+
+                // Assuming your API returns the array in response.data.data or response.data
+                setHistory(response.data.data || response.data);
+            } catch (error) {
+                console.error("Failed to fetch history:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (token) {
+            fetchHistory();
+        } else {
             setLoading(false);
-        }, 500);
-    }, []);
+        }
+    }, [token]);
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
@@ -76,11 +84,12 @@ const History = () => {
                                             {formatDate(item.created_at)}
                                         </span>
                                         <span className="text-[10px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">
-                                            {item.status}
+                                            {item.status || 'completed'}
                                         </span>
                                     </div>
                                     <p className="text-sm text-gray-300 font-medium line-clamp-2">
-                                        {item.original_text}
+                                        {/* Adjust 'original_text' if your API uses a different column name */}
+                                        {item.original_text || item.text}
                                     </p>
                                     {item.ai_score && (
                                         <div className="flex items-center mt-2 space-x-3">
