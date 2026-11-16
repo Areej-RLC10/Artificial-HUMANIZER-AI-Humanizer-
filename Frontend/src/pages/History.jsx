@@ -1,23 +1,31 @@
 // src/pages/History.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
 import { formatDate, formatScore, getScoreColor } from '../utils/formatters';
 import { motion } from 'framer-motion';
 import { FiClock, FiChevronRight } from 'react-icons/fi';
-import axios from 'axios'; // Make sure you have axios installed
+import axios from 'axios';
 
 const History = () => {
-    const { user, token } = useAuth(); // Assuming your auth hook provides the token
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [errorMsg, setErrorMsg] = useState(null);
 
     useEffect(() => {
         const fetchHistory = async () => {
             try {
-                // Replace with your actual API URL if it's in an environment variable
+                // 1. Get token directly from localStorage
+                const token = localStorage.getItem('token'); 
+                
+                if (!token) {
+                    setErrorMsg("No authentication token found. Please log in again.");
+                    setLoading(false);
+                    return;
+                }
+
                 const apiUrl = import.meta.env.VITE_API_URL || 'https://ai-humanizer-api-9v74.onrender.com/api';
                 
+                // 2. Fetch the history
                 const response = await axios.get(`${apiUrl}/history`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -25,21 +33,21 @@ const History = () => {
                     }
                 });
 
-                // Assuming your API returns the array in response.data.data or response.data
-                setHistory(response.data.data || response.data);
+                console.log("Successfully fetched history data:", response.data);
+
+                // 3. Handle different Laravel response formats
+                const data = response.data.data ? response.data.data : response.data;
+                setHistory(data);
             } catch (error) {
                 console.error("Failed to fetch history:", error);
+                setErrorMsg(error.response?.data?.message || "Failed to load history. Please try again.");
             } finally {
                 setLoading(false);
             }
         };
 
-        if (token) {
-            fetchHistory();
-        } else {
-            setLoading(false);
-        }
-    }, [token]);
+        fetchHistory();
+    }, []);
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
@@ -57,6 +65,12 @@ const History = () => {
                 <div className="text-center py-12">
                     <div className="w-8 h-8 border-2 border-gray-700 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
                     <p className="mt-4 text-sm text-gray-500 font-medium">Loading history...</p>
+                </div>
+            ) : errorMsg ? (
+                <div className="card text-center py-12 border border-red-500/30">
+                    <div className="text-5xl mb-4">⚠️</div>
+                    <h3 className="text-lg font-bold text-white">Error</h3>
+                    <p className="text-sm text-red-400 mt-1">{errorMsg}</p>
                 </div>
             ) : history.length === 0 ? (
                 <div className="card text-center py-12">
@@ -88,8 +102,7 @@ const History = () => {
                                         </span>
                                     </div>
                                     <p className="text-sm text-gray-300 font-medium line-clamp-2">
-                                        {/* Adjust 'original_text' if your API uses a different column name */}
-                                        {item.original_text || item.text}
+                                        {item.original_text || item.text || "No text preview available"}
                                     </p>
                                     {item.ai_score && (
                                         <div className="flex items-center mt-2 space-x-3">
