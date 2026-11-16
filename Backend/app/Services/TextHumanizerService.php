@@ -46,7 +46,7 @@ class TextHumanizerService
      * Word-overlap similarity check.
      * Returns true if >60% of unique words are shared between the two texts.
      */
-    private function tooSimilar(string $a, string $b, float $threshold = 0.6): bool
+    private function tooSimilar(string $a, string $b, float $threshold = 0.8): bool
     {
         $wa = array_unique(str_word_count(strtolower($a), 1));
         $wb = array_unique(str_word_count(strtolower($b), 1));
